@@ -382,23 +382,11 @@ void shellClearScreen(int32_t ecmd_pos, int32_t cursor_pos) {
   fflush(stdout);
 }
 
-void shellShowOnScreen(SShellCmd *cmd) {
-  int32_t ws_col;
-  shellGetScreenSize(&ws_col, NULL);
-
+void shellPrintWchars(int32_t ws_col, char * total_string, int32_t commandSize) {
   TdWchar wc;
   int32_t size = 0;
-
-  // Print out the command.
-  char *total_string = taosMemoryMalloc(SHELL_MAX_COMMAND_SIZE);
-  memset(total_string, '\0', SHELL_MAX_COMMAND_SIZE);
-  if (strcmp(cmd->buffer, "") == 0) {
-    sprintf(total_string, "%s%s", shell.info.promptHeader, cmd->command);
-  } else {
-    sprintf(total_string, "%s%s", shell.info.promptContinue, cmd->command);
-  }
   int32_t remain_column = ws_col;
-  for (char *str = total_string; size < cmd->commandSize + PSIZE;) {
+  for (char *str = total_string; size < commandSize + PSIZE;) {
     int32_t ret = taosMbToWchar(&wc, str, MB_CUR_MAX);
     if (ret < 0) break;
     size += ret;
@@ -419,6 +407,63 @@ void shellShowOnScreen(SShellCmd *cmd) {
 
     str = total_string + size;
   }
+}
+
+void shellPrintArmWchars(int32_t ws_col, char * total_string, int32_t commandSize) {
+    mbstate_t state = {0}; 
+    const char *ptr = total_string;
+    TdWchar wc;
+    int32_t remain_column = ws_col;
+    int32_t max_len = commandSize;
+    while (max_len > 0) {
+        size_t size = mbrtowc(&wc, ptr, commandSize, &state); 
+
+        if (size == (size_t)-1 || size == (size_t)-2) { 
+            wprintf(L"%s character conversion failed!", total_string);
+            break;
+        }
+
+        if (size == 0) { 
+            break;
+        }
+
+        int32_t width = taosWcharWidth(wc);
+        if (remain_column > width) {
+          wprintf(L"%lc", wc);
+          remain_column -= width;
+        } else {
+          if (remain_column == width) {
+            wprintf(L"%lc\n\r", wc);
+            remain_column = ws_col;
+          } else {
+            wprintf(L"\n\r%lc", wc);
+            remain_column = ws_col - width;
+          }
+        }
+        ptr += size;          
+        max_len -= size; 
+    }
+}
+
+void shellShowOnScreen(SShellCmd *cmd) {
+  taosSetSystemLocale("");
+  int32_t ws_col;
+  shellGetScreenSize(&ws_col, NULL);
+
+  // Print out the command.
+  char *total_string = taosMemoryMalloc(SHELL_MAX_COMMAND_SIZE);
+  memset(total_string, '\0', SHELL_MAX_COMMAND_SIZE);
+  if (strcmp(cmd->buffer, "") == 0) {
+    sprintf(total_string, "%s%s", shell.info.promptHeader, cmd->command);
+  } else {
+    sprintf(total_string, "%s%s", shell.info.promptContinue, cmd->command);
+  }
+
+#if defined(TD_ARM_64) || defined(TD_ARM_32)
+  shellPrintArmWchars(ws_col, total_string, cmd->commandSize);
+#else
+  shellPrintWchars(ws_col, total_string, cmd->commandSize);
+#endif
 
   taosMemoryFree(total_string);
   // Position the cursor
