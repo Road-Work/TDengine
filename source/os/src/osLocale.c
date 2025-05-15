@@ -94,6 +94,19 @@ int32_t taosSetSystemLocale(const char *inLocale) {
   return 0;
 }
 
+int32_t taosSetSystemLocale(int type, const char *inLocale) {
+
+  char *locale = setlocale(type, inLocale);
+  if (NULL == locale) {
+    terrno = TSDB_CODE_INVALID_PARA;
+    uError("failed to set locale:%s", inLocale);
+    return terrno;
+  }
+
+  tstrncpy(tsLocale, locale, TD_LOCALE_LEN);
+  return 0;
+}
+
 void taosGetSystemLocale(char *outLocale, char *outCharset) {
   if (outLocale == NULL || outCharset == NULL) return;
 #ifdef WINDOWS

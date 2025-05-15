@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
   taosSetSignal(SIGABRT, shellCrashHandler);
   taosSetSignal(SIGFPE, shellCrashHandler);
   taosSetSignal(SIGSEGV, shellCrashHandler);
-  taosSetSystemLocale("zh_CN.UTF-8");
+  taosSetSystemLocale(LC_ALL, "zh_CN.UTF-8");
 
   initArgument(&shell.args);
 
