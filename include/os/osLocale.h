@@ -31,7 +31,7 @@ extern "C" {
 char   *taosCharsetReplace(char *charsetstr);
 void    taosGetSystemLocale(char *outLocale, char *outCharset);
 int32_t taosSetSystemLocale(const char *inLocale);
-int32_t taosSetSystemLocale(int type, const char *inLocale);
+int32_t taosSetSystemLocaleByType(int type, const char *inLocale);
 
 #ifdef __cplusplus
 }

@@ -94,7 +94,7 @@ int32_t taosSetSystemLocale(const char *inLocale) {
   return 0;
 }
 
-int32_t taosSetSystemLocale(int type, const char *inLocale) {
+int32_t taosSetSystemLocaleByType(int type, const char *inLocale) {
 
   char *locale = setlocale(type, inLocale);
   if (NULL == locale) {
